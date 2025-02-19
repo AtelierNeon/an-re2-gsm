@@ -3,7 +3,7 @@
 # license that can be found in the LICENSE file.
 
 # Old enough to support Ubuntu Xenial.
-cmake_minimum_required(VERSION 3.5.1)
+cmake_minimum_required(VERSION 3.5.1...3.15.0)
 
 project(RE2 CXX)
 include(CMakePackageConfigHelpers)
@@ -22,6 +22,20 @@ option(USEPCRE "use PCRE in tests and benchmarks" OFF)
 # CMake seems to have no way to enable/disable testing per subproject,
 # so we provide an option similar to BUILD_TESTING, but just for RE2.
 option(RE2_BUILD_TESTING "enable testing for RE2" ON)
+
+option(RE2_WITH_SHARED_LIBRARIES "Build shared version of the RE2 libraries." OFF)
+option(RE2_WITHOUT_INSTALL_ALL "Build RE2 without installing all artifacts." ON)
+option(RE2_WITHOUT_TEST_APPS "Build RE2 without test apps." ON)
+if(RE2_WITH_SHARED_LIBRARIES)
+  set(BUILD_SHARED_LIBS ON)
+else()
+  set(BUILD_SHARED_LIBS OFF)
+endif()
+if(RE2_WITHOUT_TEST_APPS)
+  set(RE2_BUILD_TESTING OFF)
+else()
+  set(RE2_BUILD_TESTING ON)
+endif()
 
 # ABI version
 # http://tldp.org/HOWTO/Program-Library-HOWTO/shared-libraries.html
@@ -154,15 +168,17 @@ set(RE2_HEADERS
     re2/stringpiece.h
     )
 
-install(FILES ${RE2_HEADERS}
-        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/re2)
-install(TARGETS re2 EXPORT re2Targets
-        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
-install(EXPORT re2Targets
-        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/re2 NAMESPACE re2::)
+if(NOT RE2_WITHOUT_INSTALL_ALL)
+  install(FILES ${RE2_HEADERS}
+          DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/re2)
+  install(TARGETS re2 EXPORT re2Targets
+          ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+          LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+          RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+          INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+  install(EXPORT re2Targets
+          DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/re2 NAMESPACE re2::)
+endif()
 
 configure_package_config_file(${CMAKE_CURRENT_SOURCE_DIR}/re2Config.cmake.in
                               ${CMAKE_CURRENT_BINARY_DIR}/re2Config.cmake
@@ -173,6 +189,8 @@ write_basic_package_version_file(${CMAKE_CURRENT_BINARY_DIR}/re2ConfigVersion.cm
                                  COMPATIBILITY SameMajorVersion
                                  )
 
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/re2Config.cmake
-              ${CMAKE_CURRENT_BINARY_DIR}/re2ConfigVersion.cmake
-        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/re2)
+if(NOT RE2_WITHOUT_INSTALL_ALL)
+  install(FILES ${CMAKE_CURRENT_BINARY_DIR}/re2Config.cmake
+                ${CMAKE_CURRENT_BINARY_DIR}/re2ConfigVersion.cmake
+          DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/re2)
+endif()
